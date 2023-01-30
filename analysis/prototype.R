@@ -1,36 +1,66 @@
 library(ggplot2)
-#library(ggfortify)
-#library(lubridate)
-#library(gridExtra)
-#library(extRemes)
 library(forecast)
 library(quantreg)
 library(zoo)
+library(tidyverse)
 
 theme_set(theme_bw())
 
-priceDAH <- read.csv("~/Documents/Education/current/thesis/dev/data/priceDAH_BE.csv")
-priceDAH$datetime <- as.POSIXct(priceDAH$datetime, format = "%Y-%m-%d %H:%M:%S")
-#priceDAH <- subset(priceDAH, format(priceDAH$datetime, "%Y") < 2021 )
-priceDAH <- subset(priceDAH, format(priceDAH$datetime, "%H") == "17" )
-priceDAH$datetime <- as.Date(priceDAH$datetime)
+import_entsoe <- function(data) {
+  
+  url <- sprintf("~/Documents/Github/thesis-code/data/%s", data)
+  df <- read.csv(url)
+  
+  df$datetime <- as.POSIXct(df$datetime, format = "%Y-%m-%d %H:%M:%S")
+  df <- subset(df, format(df$datetime, "%Y") < 2021 )
+  df <- subset(df, format(df$datetime, "%H") == "17" )
+  df$datetime <- as.Date(df$datetime)
+  
+  return(df)
+  
+}
 
-meteoDaily <- read.csv("~/Documents/Education/current/thesis/dev/data/meteo_daily.csv")
-meteoDaily$datetime <- as.Date(meteoDaily$time)
-meteoDaily$sunhours <- as.numeric(as.difftime(meteoDaily$sunhours, format = "0 days %H:%M:%S"))
+## DATA BE
 
+priceBE <- import_entsoe("priceDAH_BE.csv")
+loadBE <- import_entsoe("loadDAH_BE.csv")
+generationBE <- import_entsoe("generationDAH_BE.csv")
+renewablesBE <- import_entsoe("renewablesDAH_BE.csv")
 
-data <- merge(priceDAH, meteoDaily, by="datetime")
+list_BE <- list(priceBE, generationBE, loadBE, renewablesBE)
+dataBE <- list_BE %>% reduce(full_join, by='datetime')
+rm(list_BE, priceBE, loadBE, generationBE, renewablesBE)
+
+## DATA SUNLIGHT
+
+sunlight <- read.csv("~/Documents/Github/thesis-code/data/sunlight.csv")
+sunlight$X <- NULL
+sunlight$datetime <- as.Date(sunlight$day)
+sunlight$day <- NULL
+sunlight$sunhours <- as.numeric(as.difftime(sunlight$sunhours, format = "0 days %H:%M:%S"))
+
+data <- merge(dataBE, sunlight, by="datetime")
+rm(dataBE, sunlight)
+
+## DATA CWE
+
+# need to fix data
+# there are two observations per date
+# origin is to be found in DE generation
+# french load is empty
+#CWE <- import_entsoe("data_CWE.csv")
+#CWE <- CWE[c("loadNL", "loadDE", "generationNL", "generationDE", "datetime")]
+#data <- merge(data, CWE, by="datetime")
+#rm(CWE)
+
+data <- data %>% drop_na(price)
 
 
 ### DECOMPOSITION
 #################
 
-trend <- ksmooth(data$datetime, data$price, 'normal', bandwidth=365)
-data$trend <- trend$y
-season <- ksmooth(data$datetime, data$price-data$trend, 'normal', bandwidth = 30)
-data$seasonal <- season$y
-#priceDAH$price_stat <- priceDAH$price - priceDAH$trend - priceDAH$seasonal
+data$trend <- ksmooth(data$datetime, data$price, 'normal', bandwidth=365)$y
+data$seasonal <- ksmooth(data$datetime, data$price-data$trend, 'normal', bandwidth = 30)$y
 
 ggplot(data) +
   geom_line(aes(datetime, price)) +
