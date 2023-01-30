@@ -2,6 +2,7 @@ library(ggplot2)
 library(forecast)
 library(quantreg)
 library(zoo)
+library(atsd)
 library(tidyverse)
 
 theme_set(theme_bw())
@@ -77,25 +78,33 @@ ggplot(data) +
 ggplot(data) +
   geom_line(aes(datetime, price-trend-seasonal)) +
   scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (decomposed)")
+  labs(x="Date", y="Price (detrended and deseasonalized)")
 
 
 ### QUANTILE REGRESSION
 #######################
 
+# basic - trend and seasonal
 formula1 <- price ~ trend + seasonal
-#formula2 <- price ~ trend + seasonal + generation + load + solar + wind_onshore + wind_offshore
+# entsoe predictions 
+formula2a <- price ~ trend + seasonal + generation + load 
+formula2b <- price ~ trend + seasonal + solar + wind_onshore + wind_offshore
+formula2c <- price ~ trend + seasonal + generation + load + solar + wind_onshore + wind_offshore
+# meteorological variables
 formula3 <- price ~ trend + seasonal + sunhours
-#dataBE_zoo <- to_zoo(dataBE, timestamp = "date", value = "price")
-#formula4 <- dataBE_zoo ~ L(dataBE_zoo, 1) + L(dataBE_zoo, 1) + dataBE$trend + dataBE$seasonal
-# generation and load of neighbouring countries
-# all combined
-
-qreg <- rq(formula3,
-            data = data,
-            tau=1:99/100)
-
-plot_predictions(qreg,data)
+# generation and load of CWE
+formula4a <- price ~ trend + seasonal + generationFR + generationDE + generationNL + loadFR + loadDE + loadNL
+formula4b <- price ~ trend + seasonal + generationFR + generationDE + generationNL + loadFR + loadDE + loadNL + generation + load
+# AR terms
+price_zoo <- to_zoo(data, timestamp = "datetime", value = "price")
+formula5 <- price_zoo ~ data$trend + data$seasonal + L(price_zoo, 1) + L(price_zoo, 2)
+# all 
+formula6 <- price_zoo ~ data$trend + data$seasonal + L(price_zoo, 1) + L(price_zoo, 2) +
+                        generation + load + solar + wind_onshore + wind_offshore +
+                        generationFR + loadFR +
+                        generationDE + loadDE +
+                        generationNL + loadNL +
+                        sunhours
 
 plot_predictions <- function(model,data) {
   
@@ -121,7 +130,12 @@ plot_predictions <- function(model,data) {
   
 }
 
+qreg <- rq(formula3,
+           data = data,
+           tau=1:9/10)
+summary(qreg)
 
+plot_predictions(qreg,data)
 
 
 
