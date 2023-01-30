@@ -45,14 +45,14 @@ rm(dataBE, sunlight)
 
 ## DATA CWE
 
-# need to fix data
-# there are two observations per date
-# origin is to be found in DE generation
+
 # french load is empty
-#CWE <- import_entsoe("data_CWE.csv")
-#CWE <- CWE[c("loadNL", "loadDE", "generationNL", "generationDE", "datetime")]
-#data <- merge(data, CWE, by="datetime")
-#rm(CWE)
+# sum(is.na(CWE$loadFR))
+loadCWE <- import_entsoe("load_CWE.csv")
+generationCWE <- import_entsoe("generation_CWE.csv")
+CWE <- merge(loadCWE, generationCWE, by="datetime")
+data <- merge(data, CWE, by="datetime")
+rm(CWE, loadCWE, generationCWE)
 
 data <- data %>% drop_na(price)
 
@@ -84,41 +84,45 @@ ggplot(data) +
 ### QUANTILE REGRESSION
 #######################
 
-# basic - trend and seasonal
-formula1 <- price ~ trend + seasonal
-# entsoe predictions 
-formula2a <- price ~ trend + seasonal + generation + load 
-formula2b <- price ~ trend + seasonal + solar + wind_onshore + wind_offshore
-formula2c <- price ~ trend + seasonal + generation + load + solar + wind_onshore + wind_offshore
-# meteorological variables
-formula3 <- price ~ trend + seasonal + sunhours
-# generation and load of CWE
-formula4a <- price ~ trend + seasonal + generationFR + generationDE + generationNL + loadFR + loadDE + loadNL
-formula4b <- price ~ trend + seasonal + generationFR + generationDE + generationNL + loadFR + loadDE + loadNL + generation + load
-# AR terms
-price_zoo <- to_zoo(data, timestamp = "datetime", value = "price")
-formula5 <- price_zoo ~ data$trend + data$seasonal + L(price_zoo, 1) + L(price_zoo, 2)
-# all 
-formula6 <- price_zoo ~ data$trend + data$seasonal + L(price_zoo, 1) + L(price_zoo, 2) +
-                        generation + load + solar + wind_onshore + wind_offshore +
-                        generationFR + loadFR +
-                        generationDE + loadDE +
-                        generationNL + loadNL +
-                        sunhours
+
+formula <- price_zoo ~ L(price_zoo, 1) + L(price_zoo, 2)
+                        + data$trend + data$seasonal
+                        + data$generation + data$load
+                        + data$solar + data$wind_onshore + data$wind_offshore
+                        + data$sunhours
+                        + data$generationFR + data$generationNL + data$generationDE
+                        + data$loadNL + data$loadDE
 
 plot_predictions <- function(model,data) {
   
   predictions = data.frame(
     date = data$date,
     price <- data$price,
-    q01 <- model$fitted.values[,1],
-    q05 <- model$fitted.values[,5],
-    q50 <- model$fitted.values[,50],
-    q95 <- model$fitted.values[,95],
-    q99 <- model$fitted.values[,99]
+    q01 <- NA,
+    q05 <- NA,
+    q50 <- NA,
+    q95 <- NA,
+    q99 <- NA
   )
   
-  ggplot(predictions) +
+  end <- length(predictions$price)
+  start <- end - length(model$fitted.values[,1]) + 1
+  #start <- 1
+  #end <- length(model$fitted.values[,1])
+    
+  predictions$q01[start:end] <- model$fitted.values[,1]
+  predictions$q05[start:end] <- model$fitted.values[,5]
+  predictions$q50[start:end] <- model$fitted.values[,50]
+  predictions$q95[start:end] <- model$fitted.values[,95]
+  predictions$q99[start:end] <- model$fitted.values[,99]
+  
+  cols <- c("Q50" = "red",
+            "Q05-Q95" = "blue",
+            "Q01-Q99" = "lightblue",
+            "price" = "black")
+  
+  p <- 
+    ggplot(predictions) +
     geom_line(aes(date, price)) +
     geom_line(aes(date, q50), color="red") +
     geom_line(aes(date, q05), color="blue") +
@@ -126,96 +130,35 @@ plot_predictions <- function(model,data) {
     geom_line(aes(date, q01), color="lightblue") +
     geom_line(aes(date, q99), color="lightblue") +
     scale_x_date(date_labels = "%d-%m-%Y") +
-    labs(x="Date", y="Price")
+    labs(x="Date", y="Price (€/MWh)", colour="model") 
+  
+  p + scale_colour_manual(values = c("red", "blue"), limits=c("M", "Q"))
   
 }
 
-qreg <- rq(formula3,
-           data = data,
-           tau=1:9/10)
-summary(qreg)
-
-plot_predictions(qreg,data)
 
 
+qreg_complete <- dynrq(price_zoo ~ L(price_zoo, 1) + L(price_zoo, 2)
+              + data$trend + data$seasonal
+              + data$generation + data$load
+              + data$solar + data$wind_onshore + data$wind_offshore
+              + data$sunhours
+              + data$generationFR + data$generationNL + data$generationDE
+               + data$loadNL + data$loadDE,
+              tau=1:9/10)
+summary(qreg_complete)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+qreg_basic <- rq(price ~
+              + trend + seasonal
+              + generation + load
+              + solar + wind_onshore + wind_offshore
+              + sunhours,
+              #+ generationFR + generationNL + generationDE
+              #+ loadNL + loadDE,
+              data=data,
+              tau=1:99/100)
 
 
 
+plot_predictions(qreg_basic,data)
 
-
-
-
-#q05 <- rq(price~datetime, tau=0.05, data = priceDAH)
-#q50 <- rq(price~datetime, tau=0.5, data = priceDAH)
-#q95 <- rq(price~datetime, tau=0.95, data = priceDAH)
-
-q50 <- rq(price ~ trend + seasonal, data=priceDAH, tau=0.5)
-q95 <- rq(price ~ trend + seasonal, data=priceDAH, tau=0.95)
-q05 <- rq(price ~ trend + seasonal, data=priceDAH, tau=0.05)
-
-qreg <- rq(price ~ trend + seasonal, data=priceDAH, tau=1:9/10)
-plot(qreg)
-
-priceDAH$q95est <- q95$fitted.values
-priceDAH$q50est <- q50$fitted.values
-priceDAH$q05est <- q05$fitted.values
-
-ggplot(priceDAH) +
-  geom_line(aes(datetime, price)) +
-  geom_line(aes(datetime, q95est), color="red") +
-  geom_line(aes(datetime, q05est), color="red") +
-  geom_line(aes(datetime, q50est), color="blue")
-  
-
-## dynamic quantiles
-
-priceTS <- zoo(data.matrix(priceDAH[2:4]), priceDAH$datetime)
-# same model as above
-test <- dynrq(priceTS$price ~ priceTS$trend + priceTS$seasonal, tau=1:9/10)
-test2 <- dynrq(priceTS$price ~ priceTS$trend + priceTS$seasonal + L(priceTS$price, 1) + L(priceTS$price, 2), tau=1:9/10)
-
-plot(test2)
-
-
-test2M <- dynrq(priceTS$price ~ priceTS$trend + priceTS$seasonal + L(priceTS$price, 1), tau=0.5)
-test2Q05 <- dynrq(priceTS$price ~ priceTS$trend + priceTS$seasonal + L(priceTS$price, 1), tau=0.05)
-test2Q95 <- dynrq(priceTS$price ~ priceTS$trend + priceTS$seasonal + L(priceTS$price, 1), tau=0.95)
-priceDAH$q95est[2:2188] <- test2Q95$fitted.values
-priceDAH$q50est[2:2188] <- test2M$fitted.values
-priceDAH$q05est[2:2188] <- test2Q05$fitted.values
-
-ggplot(priceDAH) +
-  geom_line(aes(datetime, price)) +
-  geom_line(aes(datetime, q95est), color="red") +
-  geom_line(aes(datetime, q05est), color="red") +
-  geom_line(aes(datetime, q50est), color="blue")
-
-
-priceStat <- zoo(priceDAH$price_stat, priceDAH$datetime)
-test4q05 <- dynrq(priceStat ~ L(priceStat, 1), tau=0.05)
-test4q50 <- dynrq(priceStat ~ L(priceStat, 1), tau=0.50)
-test4q95 <- dynrq(priceStat ~ L(priceStat, 1), tau=0.95)
-priceDAH$q95est[2:2188] <- test4q95$fitted.values
-priceDAH$q50est[2:2188] <- test4q50$fitted.values
-priceDAH$q05est[2:2188] <- test4q05$fitted.values
-
-ggplot(priceDAH) +
-  geom_line(aes(datetime, price_stat)) +
-  geom_line(aes(datetime, q95est), color="red") +
-  geom_line(aes(datetime, q05est), color="red") +
-  geom_line(aes(datetime, q50est), color="blue")
