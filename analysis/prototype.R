@@ -45,7 +45,6 @@ rm(dataBE, sunlight)
 
 ## DATA CWE
 
-
 # french load is empty
 # sum(is.na(CWE$loadFR))
 loadCWE <- import_entsoe("load_CWE.csv")
@@ -63,22 +62,30 @@ data <- data %>% drop_na(price)
 data$trend <- ksmooth(data$datetime, data$price, 'normal', bandwidth=365)$y
 data$seasonal <- ksmooth(data$datetime, data$price-data$trend, 'normal', bandwidth = 30)$y
 
-ggplot(data) +
+p_decomposition_1 <- 
+  ggplot(data) +
   geom_line(aes(datetime, price)) +
   geom_line(aes(datetime, trend), color="red") +
   scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price")
+  labs(x="Date", y="Price (€/MWh)")
 
-ggplot(data) +
+p_decomposition_2 <- 
+  ggplot(data) +
   geom_line(aes(datetime, price-trend)) +
   geom_line(aes(datetime, seasonal), color="red") +
   scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (detrended)")
+  labs(x="Date", y="Price (€/MWh)")
 
-ggplot(data) +
+p_decomposition_3 <- 
+  ggplot(data) +
   geom_line(aes(datetime, price-trend-seasonal)) +
   scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (detrended and deseasonalized)")
+  labs(x="Date", y="Price (€/MWh)")
+
+
+ggsave(p_decomposition_1, width=16, height=5, units="in", filename="p_decomposition_1.png")
+ggsave(p_decomposition_2, width=16, height=5, units="in", filename="p_decomposition_2.png")
+ggsave(p_decomposition_3, width=16, height=5, units="in", filename="p_decomposition_3.png")
 
 
 ### QUANTILE REGRESSION
@@ -132,7 +139,7 @@ plot_predictions <- function(model,data) {
     scale_x_date(date_labels = "%d-%m-%Y") +
     labs(x="Date", y="Price (€/MWh)", colour="model") 
   
-  p + scale_colour_manual(values = c("red", "blue"), limits=c("M", "Q"))
+  return(p)
   
 }
 
@@ -158,7 +165,6 @@ qreg_basic <- rq(price ~
               data=data,
               tau=1:99/100)
 
-
-
-plot_predictions(qreg_basic,data)
+p_predictions <- plot_predictions(qreg_basic,data)
+ggsave(p_predictions, width=16, height=5, units="in", filename="p_predictions.png")
 
