@@ -9,7 +9,7 @@ theme_set(theme_bw())
 
 import_entsoe <- function(data) {
   
-  url <- sprintf("~/Documents/Github/thesis-code/data/%s", data)
+  url <- sprintf("~/Documents/Github/eem-rkqr/data/%s", data)
   df <- read.csv(url)
   
   df$datetime <- as.POSIXct(df$datetime, format = "%Y-%m-%d %H:%M:%S")
@@ -34,7 +34,7 @@ rm(list_BE, priceBE, loadBE, generationBE, renewablesBE)
 
 ## DATA SUNLIGHT
 
-sunlight <- read.csv("~/Documents/Github/thesis-code/data/sunlight.csv")
+sunlight <- read.csv("~/Documents/Github/eem-rkqr/data/sunlight.csv")
 sunlight$X <- NULL
 sunlight$datetime <- as.Date(sunlight$day)
 sunlight$day <- NULL
@@ -61,6 +61,9 @@ data <- data %>% drop_na(price)
 
 data$trend <- ksmooth(data$datetime, data$price, 'normal', bandwidth=365)$y
 data$seasonal <- ksmooth(data$datetime, data$price-data$trend, 'normal', bandwidth = 30)$y
+data$residual <- data$price - data$trend - data$seasonal
+
+
 
 p_decomposition_1 <- 
   ggplot(data) +
@@ -83,9 +86,15 @@ p_decomposition_3 <-
   labs(x="Date", y="Price (€/MWh)")
 
 
+
+p_acf <- ggAcf(data$residual) + ggtitle("")
+p_pacf <- ggPacf(data$residual) + ggtitle("")
+
 ggsave(p_decomposition_1, width=16, height=5, units="in", filename="p_decomposition_1.png")
 ggsave(p_decomposition_2, width=16, height=5, units="in", filename="p_decomposition_2.png")
 ggsave(p_decomposition_3, width=16, height=5, units="in", filename="p_decomposition_3.png")
+ggsave(p_acf, width=8, height=5, units="in", filename="p_acf.png")
+ggsave(p_pacf, width=8, height=5, units="in", filename="p_pacf.png")
 
 
 ### QUANTILE REGRESSION
