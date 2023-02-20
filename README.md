@@ -5,4 +5,4 @@ Quantile regression on Belgian day-ahead electricity prices by using CWE data.
 ## Models
 
 - [x] Gradient Boosting
-- [] Neural networks
+- [ ] Neural networks
