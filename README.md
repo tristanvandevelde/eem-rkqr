@@ -2,6 +2,12 @@
  
 Quantile regression on Belgian day-ahead electricity prices by using CWE data.
 
+## Evaluation methods
+
+- [ ] PID histograms
+- [ ] pinball loss
+- [ ] 
+
 ## Models
 
 ### Classical statistics
