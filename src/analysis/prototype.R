@@ -100,14 +100,16 @@ ggsave(p_pacf, width=8, height=5, units="in", filename="p_pacf.png")
 ### QUANTILE REGRESSION
 #######################
 
+qreg_complete <- dynrq(price_zoo ~ L(price_zoo, 1) + L(price_zoo, 2) + L(price_zoo, 3)
+                       + data$trend + data$seasonal
+                       + data$generation + data$load
+                       + data$solar + data$wind_onshore + data$wind_offshore
+                       + data$sunhours
+                       + data$generationFR + data$generationNL + data$generationDE
+                       + data$loadNL + data$loadDE,
+                       tau=1:99/100)
+summary(qreg_complete)
 
-formula <- price_zoo ~ L(price_zoo, 1) + L(price_zoo, 2)
-                        + data$trend + data$seasonal
-                        + data$generation + data$load
-                        + data$solar + data$wind_onshore + data$wind_offshore
-                        + data$sunhours
-                        + data$generationFR + data$generationNL + data$generationDE
-                        + data$loadNL + data$loadDE
 
 plot_predictions <- function(model,data) {
   
@@ -154,26 +156,7 @@ plot_predictions <- function(model,data) {
 
 
 
-qreg_complete <- dynrq(price_zoo ~ L(price_zoo, 1) + L(price_zoo, 2)
-              + data$trend + data$seasonal
-              + data$generation + data$load
-              + data$solar + data$wind_onshore + data$wind_offshore
-              + data$sunhours
-              + data$generationFR + data$generationNL + data$generationDE
-               + data$loadNL + data$loadDE,
-              tau=1:9/10)
-summary(qreg_complete)
 
-qreg_basic <- rq(price ~
-              + trend + seasonal
-              + generation + load
-              + solar + wind_onshore + wind_offshore
-              + sunhours,
-              #+ generationFR + generationNL + generationDE
-              #+ loadNL + loadDE,
-              data=data,
-              tau=1:99/100)
 
-p_predictions <- plot_predictions(qreg_basic,data)
-ggsave(p_predictions, width=16, height=5, units="in", filename="p_predictions.png")
+
 
