@@ -64,9 +64,7 @@ data$seasonal <- ksmooth(data$datetime, data$price-data$trend, 'normal', bandwid
 data$residual <- data$price - data$trend - data$seasonal
 
 
-
-p_decomposition_1 <- 
-  ggplot(data) +
+ggplot(data) +
   geom_line(aes(datetime, price)) +
   geom_line(aes(datetime, trend), color="red") +
   scale_x_date(date_labels = "%d-%m-%Y") +
