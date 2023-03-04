@@ -75,6 +75,14 @@ formula1 <- priceBE ~
   scale(loadBE) + scale(loadNL) + scale(loadDE) +
   scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
 
+formula1b <- priceBE ~ 
+  priceBE_lag1 + priceBE_lag2 + priceBE_lag3 + priceBE_lag4 + priceBE_lag5 +
+  scale(priceNL_lag1) + scale(priceNL_lag2) + scale(priceNL_lag3) + scale(priceNL_lag4) + scale(priceNL_lag5) +
+  scale(priceFR_lag1) + scale(priceFR_lag2) + scale(priceFR_lag3) + scale(priceFR_lag4) + scale(priceFR_lag5) +
+  scale(priceDE_lag1) + scale(priceDE_lag2) + scale(priceDE_lag3) + scale(priceDE_lag4) + scale(priceDE_lag5) +
+  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+  scale(loadBE) + scale(loadNL) + scale(loadDE) +
+  scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
 
 model1 <- rq(formula1, 
              data=data_train,
@@ -85,26 +93,27 @@ predictions_model1 <- predict(model1,
                               tau = 1:99/100)
 write.csv(predictions_model1, "predictions_model1.csv", row.names=FALSE)
 
-#model1_005 <- rq(formula1,
-#                 data = data_train,
-#                 tau = 0.05)
-#print(summary(model1_005), latex=TRUE)
+model1_005 <- rq(formula1,
+                 data = data_train,
+                 tau = 0.05)
+print(summary(model1_005), latex=TRUE)
 
-#model1_005 <- rq(formula1,
-#                 data = data_train,
-#                 tau = 0.05)
-#print(summary(model1_005), latex=TRUE)
+model1_050 <- rq(formula1,
+                 data = data_train,
+                 tau = 0.5)
+print(summary(model1_050), latex=TRUE)
 
-#model1_005 <- rq(formula1,
-#                 data = data_train,
-#                 tau = 0.05)
-#print(summary(model1_005), latex=TRUE)
+model1_095 <- rq(formula1,
+                 data = data_train,
+                 tau = 0.95)
+print(summary(model1_095), latex=TRUE)
 
 ### MODEL 2
 ###########
 
 formula2 <- priceBE ~ 
   scale(priceBE_lag1) + scale(priceBE_lag2) + scale(priceBE_lag3) + scale(priceBE_lag4) + scale(priceBE_lag5) +
+
   scale(priceNL_lag1) + scale(priceNL_lag2) + scale(priceNL_lag3) + scale(priceNL_lag4) + scale(priceNL_lag5) +
   scale(priceFR_lag1) + scale(priceFR_lag2) + scale(priceFR_lag3) + scale(priceFR_lag4) + scale(priceFR_lag5) +
   scale(priceDE_lag1) + scale(priceDE_lag2) + scale(priceDE_lag3) + scale(priceDE_lag4) + scale(priceDE_lag5) +

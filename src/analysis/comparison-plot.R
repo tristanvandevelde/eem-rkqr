@@ -1,6 +1,7 @@
 library(qgam)
 library(ggplot2)
 theme_set(theme_bw())
+library(dplyr)
 
 # import data
 hour = 17
@@ -64,68 +65,57 @@ pinball_1$Model3 <- insert_pinball(predictions_model3[1:175,])
 # pinball 2 = complete year
 pinball_2 <- data.frame(tau = 1:99)
 pinball_2$tau <- pinball_2$tau/100
-pinball_2$GB1 <- insert_pinball(predictions_GB1)
-pinball_2$GB2 <- insert_pinball(predictions_GB2)
-pinball_2$Model1 <- insert_pinball(predictions_model1)
-pinball_2$Model2 <- insert_pinball(predictions_model2)
-pinball_2$Model3 <- insert_pinball(predictions_model3)
+pinball_2$GB1 <- insert_pinball(predictions_GB1[176:358,])
+pinball_2$GB2 <- insert_pinball(predictions_GB2[176:358,])
+pinball_2$Model1 <- insert_pinball(predictions_model1[176:358,])
+pinball_2$Model2 <- insert_pinball(predictions_model2[176:358,])
+pinball_2$Model3 <- insert_pinball(predictions_model3[176:358,])
 
 
-ggplot(pinball_1) +
+p_pinball_1 <- ggplot(pinball_1) +
   geom_line(aes(tau, GB1, color="Gradient boosting (order 1)")) +
   geom_line(aes(tau, GB2, color="Gradient boosting (order 2)")) +
-  geom_line(aes(tau, Model1, color="Model 1")) +
-  geom_line(aes(tau, Model2, color="Model 2")) +
-  geom_line(aes(tau, Model3, color="Model 3")) +
+  geom_line(aes(tau, Model1, color="Linear quantile regression: model 1")) +
+  geom_line(aes(tau, Model2, color="Linear quantile regression: model 2")) +
+  geom_line(aes(tau, Model3, color="Linear quantile regression: model 3")) +
   scale_color_manual(values=c("red",  "pink", "lightblue", "blue", "black")) +
-  labs(x="Quantile", y="Pinball loss")
+  labs(x="Quantile", y="Pinball loss", colour="") +
+  theme(legend.position = "none")
 
-ggplot(pinball_2) +
+p_pinball_2 <- ggplot(pinball_2) +
   geom_line(aes(tau, GB1, color="Gradient boosting (order 1)")) +
   geom_line(aes(tau, GB2, color="Gradient boosting (order 2)")) +
-  geom_line(aes(tau, Model1, color="Model 1")) +
-  geom_line(aes(tau, Model2, color="Model 2")) +
-  geom_line(aes(tau, Model3, color="Model 3")) +
+  geom_line(aes(tau, Model1, color="Linear quantile regression: model 1")) +
+  geom_line(aes(tau, Model2, color="Linear quantile regression: model 2")) +
+  geom_line(aes(tau, Model3, color="Linear quantile regression: model 3")) +
   scale_color_manual(values=c("red", "pink", "lightblue", "blue", "black")) +
-  labs(x="Quantile", y="Pinball loss")
+  labs(x="Quantile", y="Pinball loss", colour="") +
+  theme(legend.position = "none")
+  #theme(legend.position="bottom", legend.box = "vertical")
+
+ggsave(p_pinball_1, width=8, height=5, units="in", filename="p_pinball_1.png")
+ggsave(p_pinball_2, width=8, height=5, units="in", filename="p_pinball_2.png")
 
 
 ## plot GB 1
-ggplot(predictions_GB1) +
-  geom_line(aes(datetime, priceBE)) +
-  geom_line(aes(datetime, X0.50), color="red") +
-  geom_line(aes(datetime, X0.05), color="blue") +
-  geom_line(aes(datetime, X0.95), color="blue") +
-  #geom_line(aes(datetime, X0.01), color="lightblue") +
-  #geom_line(aes(datetime, X0.99), color="lightblue") +
+p_predictions_GB1 <- ggplot(predictions_GB1) +
+  geom_line(aes(datetime, priceBE, color = "Price")) +
+  geom_line(aes(datetime, X0.50, color = "Q50")) +
+  geom_line(aes(datetime, X0.05, color = "Q05 & Q95")) +
+  geom_line(aes(datetime, X0.95, color = "Q05 & Q95")) +
+  scale_color_manual(values=c("black", "#619CFF", "red")) +
   scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (€/MWh)", colour="model") 
+  labs(x="Date", y="Price (€/MWh)", colour="") 
 
 ## plot model 1
-ggplot(predictions_model1) +
-  geom_line(aes(datetime, priceBE)) +
-  geom_line(aes(datetime, tau..0.50), color="red") +
-  geom_line(aes(datetime, tau..0.05), color="lightblue") +
-  geom_line(aes(datetime, tau..0.95), color="lightblue") +
-  #geom_line(aes(datetime, tau..0.01), color="lightblue") +
-  #geom_line(aes(datetime, tau..0.99), color="lightblue") +
+p_predictions_model1 <-ggplot(predictions_model1) +
+  geom_line(aes(datetime, priceBE, color = "Price")) +
+  geom_line(aes(datetime, tau..0.50, color = "Q50")) +
+  geom_line(aes(datetime, tau..0.05, color = "Q05 & Q95")) +
+  geom_line(aes(datetime, tau..0.95, color = "Q05 & Q95")) +
+  scale_color_manual(values=c("black", "#619CFF", "red")) +
   scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (€/MWh)", colour="model") 
+  labs(x="Date", y="Price (€/MWh)", colour="") 
 
-## plot GB 1
-ggplot(predictions_GB1[1:175,]) +
-  geom_line(aes(datetime, priceBE)) +
-  geom_line(aes(datetime, X0.50), color="red") +
-  geom_line(aes(datetime, X0.05), color="lightblue") +
-  geom_line(aes(datetime, X0.95), color="lightblue") +
-  scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (€/MWh)", colour="model") 
-
-## plot model 1
-ggplot(predictions_model1[1:175,]) +
-  geom_line(aes(datetime, priceBE)) +
-  geom_line(aes(datetime, tau..0.50), color="red") +
-  geom_line(aes(datetime, tau..0.05), color="lightblue") +
-  geom_line(aes(datetime, tau..0.95), color="lightblue") +
-  scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (€/MWh)", colour="model") 
+ggsave(p_predictions_GB1, width=16, height=5, units="in", filename="p_predictions_GB1.png")
+ggsave(p_predictions_model1, width=16, height=5, units="in", filename="p_predictions_model1.png")
