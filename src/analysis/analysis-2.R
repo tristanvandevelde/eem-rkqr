@@ -159,8 +159,8 @@ write.csv(predictions_model3, "predictions_model3.csv", row.names=FALSE)
 model4 <- rq(formula1, 
              data=data_train,
              method = "scad",
-             start = "lasso",
-             tau = 1:99/100)
+             #start = "lasso",
+             tau = 0.01)
 
 predictions_model4 <- predict(model4, 
                               subset(data_test, select = -c(priceBE)),
