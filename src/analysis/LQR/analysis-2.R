@@ -5,6 +5,7 @@ library(tidyverse)
 library(dplyr)
 library(lubridate)
 require(rms)
+theme_set(theme_bw())
 
 # import data
 hour = 17
@@ -63,6 +64,24 @@ data_train$datetime <- as.Date(data_train$datetime)
 data_test$datetime <- as.Date(data_test$datetime)
 
 
+### VIZ
+#######
+
+p_exploration1 <- ggplot(data_train) +
+  geom_line(aes(datetime, priceBE)) +
+  geom_line(aes(datetime, trend+seasonal), color="red") +
+  scale_x_date(date_labels = "%d-%m-%Y") +
+  labs(x="Date", y="Price (€/MWh)")
+
+p_exploration2 <- ggplot(data_train) +
+  geom_line(aes(datetime, priceBE-trend-seasonal)) +
+  scale_x_date(date_labels = "%d-%m-%Y") +
+  labs(x="Date", y="Price (€/MWh)")
+
+ggsave(p_exploration1, width=16, height=5, units="in", filename="p_exploration1.png")
+ggsave(p_exploration2, width=16, height=5, units="in", filename="p_exploration2.png")
+
+
 ### MODEL 1
 ###########
 
@@ -75,18 +94,34 @@ formula1 <- priceBE ~
   scale(loadBE) + scale(loadNL) + scale(loadDE) +
   scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
 
-formula1b <- priceBE ~ 
-  priceBE_lag1 + priceBE_lag2 + priceBE_lag3 + priceBE_lag4 + priceBE_lag5 +
-  scale(priceNL_lag1) + scale(priceNL_lag2) + scale(priceNL_lag3) + scale(priceNL_lag4) + scale(priceNL_lag5) +
-  scale(priceFR_lag1) + scale(priceFR_lag2) + scale(priceFR_lag3) + scale(priceFR_lag4) + scale(priceFR_lag5) +
-  scale(priceDE_lag1) + scale(priceDE_lag2) + scale(priceDE_lag3) + scale(priceDE_lag4) + scale(priceDE_lag5) +
-  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
-  scale(loadBE) + scale(loadNL) + scale(loadDE) +
-  scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
+
 
 model1 <- rq(formula1, 
              data=data_train,
              tau = 1:99/100)
+
+model_reg <- rq(formula1, 
+             data=data_train,
+             method="lasso",
+             tau = 1:99/100)
+
+model_reg_050 <- rq(formula1, 
+                data=data_train,
+                method="lasso",
+                tau = 0.5)
+model_reg_050
+
+model_reg_095 <- rq(formula1, 
+                    data=data_train,
+                    method="lasso",
+                    tau = 0.95)
+model_reg_095
+
+model_reg_005 <- rq(formula1, 
+                    data=data_train,
+                    method="lasso",
+                    tau = 0.95)
+model_reg_005
 
 predictions_model1 <- predict(model1, 
                               subset(data_test, select = -c(priceBE)),
