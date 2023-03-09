@@ -8,6 +8,9 @@ hour = 17
 data <- read.csv(paste0("~/Documents/Github/eem-rkqr/data/final_", hour, ".csv"))
 data$datetime <- as.POSIXct(data$datetime, format = "%Y-%m-%d")
 
+pinball2 <- read.csv("~/Documents/Github/eem-rkqr/results/pinball2.csv")
+
+
 # cleanup
 data <- subset(data, select = -c(`loadFR`))
 data <- na.omit(data)
@@ -62,7 +65,7 @@ pinball_1$Model1 <- insert_pinball(predictions_model1[1:175,])
 pinball_1$Model2 <- insert_pinball(predictions_model2[1:175,])
 pinball_1$Model3 <- insert_pinball(predictions_model3[1:175,])
 
-# pinball 2 = complete year
+# pinball 2 = second two quarters
 pinball_2 <- data.frame(tau = 1:99)
 pinball_2$tau <- pinball_2$tau/100
 pinball_2$GB1 <- insert_pinball(predictions_GB1[176:358,])
@@ -80,9 +83,10 @@ p_pinball_1 <- ggplot(pinball_1) +
   geom_line(aes(tau, Model3, color="Linear quantile regression: model 3")) +
   scale_color_manual(values=c("red",  "pink", "lightblue", "blue", "black")) +
   labs(x="Quantile", y="Pinball loss", colour="") +
-  theme(legend.position = "none")
+  theme(legend.position = "right")
 
-p_pinball_2 <- ggplot(pinball_2) +
+#p_pinball_2 <- 
+ggplot(pinball_2) +
   geom_line(aes(tau, GB1, color="Gradient boosting (order 1)")) +
   geom_line(aes(tau, GB2, color="Gradient boosting (order 2)")) +
   geom_line(aes(tau, Model1, color="Linear quantile regression: model 1")) +
@@ -90,15 +94,27 @@ p_pinball_2 <- ggplot(pinball_2) +
   geom_line(aes(tau, Model3, color="Linear quantile regression: model 3")) +
   scale_color_manual(values=c("red", "pink", "lightblue", "blue", "black")) +
   labs(x="Quantile", y="Pinball loss", colour="") +
-  theme(legend.position = "none")
+  theme(legend.position = "right")
   #theme(legend.position="bottom", legend.box = "vertical")
 
-ggsave(p_pinball_1, width=8, height=5, units="in", filename="p_pinball_1.png")
-ggsave(p_pinball_2, width=8, height=5, units="in", filename="p_pinball_2.png")
+p_pinball_2 <- ggplot(pinball2) +
+  geom_line(aes(tau, GB1, color="Gradient boosting (order 1)")) +
+  geom_line(aes(tau, GB2, color="Gradient boosting (order 2)")) +
+  geom_line(aes(tau, model1, color="Linear quantile regression: model 1")) +
+  geom_line(aes(tau, model2, color="Linear quantile regression: model 2")) +
+  geom_line(aes(tau, model3, color="Linear quantile regression: model 3")) +
+  scale_color_manual(values=c("red", "pink", "lightblue", "blue", "black")) +
+  labs(x="Quantile", y="Pinball loss", colour="") +
+  theme(legend.position = "right")
+#theme(legend.position="bottom", legend.box = "vertical")
+
+ggsave(p_pinball_1, width=10, height=5, units="in", filename="p_pinball_1.png")
+ggsave(p_pinball_2, width=10, height=5, units="in", filename="p_pinball_2.png")
 
 
 ## plot GB 1
-p_predictions_GB1 <- ggplot(predictions_GB1) +
+#p_predictions_GB1 <- 
+ggplot(predictions_GB1) +
   geom_line(aes(datetime, priceBE, color = "Price")) +
   geom_line(aes(datetime, X0.50, color = "Q50")) +
   geom_line(aes(datetime, X0.05, color = "Q05 & Q95")) +
@@ -108,7 +124,8 @@ p_predictions_GB1 <- ggplot(predictions_GB1) +
   labs(x="Date", y="Price (€/MWh)", colour="") 
 
 ## plot model 1
-p_predictions_model1 <-ggplot(predictions_model1) +
+#p_predictions_model1 <-
+ggplot(predictions_model1) +
   geom_line(aes(datetime, priceBE, color = "Price")) +
   geom_line(aes(datetime, tau..0.50, color = "Q50")) +
   geom_line(aes(datetime, tau..0.05, color = "Q05 & Q95")) +
