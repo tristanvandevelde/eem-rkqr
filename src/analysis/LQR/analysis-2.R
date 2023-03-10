@@ -64,28 +64,86 @@ data_train$datetime <- as.Date(data_train$datetime)
 data_test$datetime <- as.Date(data_test$datetime)
 
 
-### VIZ
-#######
-
-p_exploration1 <- ggplot(data_train) +
-  geom_line(aes(datetime, priceBE)) +
-  geom_line(aes(datetime, trend+seasonal), color="red") +
-  scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (€/MWh)")
-
-p_exploration2 <- ggplot(data_train) +
-  geom_line(aes(datetime, priceBE-trend-seasonal)) +
-  scale_x_date(date_labels = "%d-%m-%Y") +
-  labs(x="Date", y="Price (€/MWh)")
-
-ggsave(p_exploration1, width=16, height=5, units="in", filename="p_exploration1.png")
-ggsave(p_exploration2, width=16, height=5, units="in", filename="p_exploration2.png")
-
 
 ### MODEL 1
 ###########
 
 formula1 <- priceBE ~ 
+  scale(priceBE_lag1) + scale(priceBE_lag2) 
+
+model1 <- rq(formula1, 
+             data=data_train,
+             tau = 1:99/100) 
+
+predictions_model1 <- predict(model1, 
+                              subset(data_test, select = -c(priceBE)),
+                              tau = 1:99/100)
+
+write.csv(predictions_model1, "predictions_model1.csv", row.names=FALSE)
+
+### MODEL 2
+###########
+
+formula2 <- priceBE ~ 
+  scale(priceBE_lag1) + scale(priceBE_lag2) +
+  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+  scale(loadBE) + scale(loadNL) + scale(loadDE)
+  
+model2 <- rq(formula2, 
+             data=data_train,
+             tau = 1:99/100) 
+
+predictions_model2 <- predict(model2, 
+                              subset(data_test, select = -c(priceBE)),
+                              tau = 1:99/100)
+
+write.csv(predictions_model2, "predictions_model2.csv", row.names=FALSE)
+
+### MODEL 3
+###########
+  
+formula3 <- priceBE ~ 
+  scale(priceBE_lag1) + scale(priceBE_lag2) +
+  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+  scale(loadBE) + scale(loadNL) + scale(loadDE) +
+  scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
+  
+model3 <- rq(formula3, 
+             data=data_train,
+             tau = 1:99/100) 
+
+predictions_model3 <- predict(model3, 
+                              subset(data_test, select = -c(priceBE)),
+                              tau = 1:99/100)
+
+write.csv(predictions_model3, "predictions_model3.csv", row.names=FALSE)
+
+### MODEL 4
+###########  
+
+formula4 <- priceBE ~ 
+  scale(priceBE_lag1) + scale(priceBE_lag2) +
+  scale(priceNL_lag1) +
+  scale(priceFR_lag1) +
+  scale(priceDE_lag1) +
+  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+  scale(loadBE) + scale(loadNL) + scale(loadDE) +
+  scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
+  
+model4 <- rq(formula4, 
+             data=data_train,
+             tau = 1:99/100)   
+
+predictions_model4 <- predict(model4, 
+                              subset(data_test, select = -c(priceBE)),
+                              tau = 1:99/100)
+
+write.csv(predictions_model4, "predictions_model4.csv", row.names=FALSE)
+
+### MODEL 5
+###########
+  
+formula5 <- priceBE ~ 
   scale(priceBE_lag1) + scale(priceBE_lag2) + scale(priceBE_lag3) + scale(priceBE_lag4) + scale(priceBE_lag5) +
   scale(priceNL_lag1) + scale(priceNL_lag2) + scale(priceNL_lag3) + scale(priceNL_lag4) + scale(priceNL_lag5) +
   scale(priceFR_lag1) + scale(priceFR_lag2) + scale(priceFR_lag3) + scale(priceFR_lag4) + scale(priceFR_lag5) +
@@ -94,82 +152,68 @@ formula1 <- priceBE ~
   scale(loadBE) + scale(loadNL) + scale(loadDE) +
   scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
 
-
-
-model1 <- rq(formula1, 
+model5 <- rq(formula5, 
              data=data_train,
-             tau = 1:99/100)
+             tau = 1:99/100) 
 
-model_reg <- rq(formula1, 
-             data=data_train,
-             method="lasso",
-             tau = 1:99/100)
-
-model_reg_050 <- rq(formula1, 
-                data=data_train,
-                method="lasso",
-                tau = 0.5)
-model_reg_050
-
-model_reg_095 <- rq(formula1, 
-                    data=data_train,
-                    method="lasso",
-                    tau = 0.95)
-model_reg_095
-
-model_reg_005 <- rq(formula1, 
-                    data=data_train,
-                    method="lasso",
-                    tau = 0.95)
-model_reg_005
-
-predictions_model1 <- predict(model1, 
+predictions_model5 <- predict(model5, 
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
-write.csv(predictions_model1, "predictions_model1.csv", row.names=FALSE)
 
-model1_005 <- rq(formula1,
-                 data = data_train,
-                 tau = 0.05)
-print(summary(model1_005), latex=TRUE)
+write.csv(predictions_model5, "predictions_model5.csv", row.names=FALSE)
 
-model1_050 <- rq(formula1,
-                 data = data_train,
-                 tau = 0.5)
-print(summary(model1_050), latex=TRUE)
-
-model1_095 <- rq(formula1,
-                 data = data_train,
-                 tau = 0.95)
-print(summary(model1_095), latex=TRUE)
-
-### MODEL 2
+### MODEL 6
 ###########
-
-formula2 <- priceBE ~ 
-  scale(priceBE_lag1) + scale(priceBE_lag2) + scale(priceBE_lag3) + scale(priceBE_lag4) + scale(priceBE_lag5) +
-
-  scale(priceNL_lag1) + scale(priceNL_lag2) + scale(priceNL_lag3) + scale(priceNL_lag4) + scale(priceNL_lag5) +
-  scale(priceFR_lag1) + scale(priceFR_lag2) + scale(priceFR_lag3) + scale(priceFR_lag4) + scale(priceFR_lag5) +
-  scale(priceDE_lag1) + scale(priceDE_lag2) + scale(priceDE_lag3) + scale(priceDE_lag4) + scale(priceDE_lag5) +
+  
+formula6 <- priceBE ~ 
+  scale(priceBE_lag1) + scale(priceBE_lag2) +
+  scale(priceNL_lag1) +
+  scale(priceFR_lag1) +
+  scale(priceDE_lag1) +
   scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
   scale(loadBE) + scale(loadNL) + scale(loadDE) +
   scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE) +
   M1 + M2 + M3 + M4 + M5 + M6 + M7 + M8 + M9 + M10  + M11 + M12 - 1
 
-model2 <- rq(formula2, 
+model6 <- rq(formula6, 
              data=data_train,
-             tau = 1:99/100)
+             tau = 1:99/100) 
 
-predictions_model2 <- predict(model2, 
+
+predictions_model6 <- predict(model6, 
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
-write.csv(predictions_model2, "predictions_model2.csv", row.names=FALSE)
 
-### MODEL 3
+write.csv(predictions_model6, "predictions_model6.csv", row.names=FALSE)
+
+### MODEL 7
+###########
+  
+formula7 <- priceBE ~ 
+    scale(priceBE_lag1) + scale(priceBE_lag2) + scale(priceBE_lag3) + scale(priceBE_lag4) + scale(priceBE_lag5) +
+    scale(priceNL_lag1) + scale(priceNL_lag2) + scale(priceNL_lag3) + scale(priceNL_lag4) + scale(priceNL_lag5) +
+    scale(priceFR_lag1) + scale(priceFR_lag2) + scale(priceFR_lag3) + scale(priceFR_lag4) + scale(priceFR_lag5) +
+    scale(priceDE_lag1) + scale(priceDE_lag2) + scale(priceDE_lag3) + scale(priceDE_lag4) + scale(priceDE_lag5) +
+    scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+    scale(loadBE) + scale(loadNL) + scale(loadDE) +
+    scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE) +
+    M1 + M2 + M3 + M4 + M5 + M6 + M7 + M8 + M9 + M10  + M11 + M12 - 1
+
+model7 <- rq(formula7, 
+             data=data_train,
+             tau = 1:99/100)  
+
+predictions_model7 <- predict(model7, 
+                              subset(data_test, select = -c(priceBE)),
+                              tau = 1:99/100)
+
+write.csv(predictions_model7, "predictions_model7.csv", row.names=FALSE)
+
+
+### MODEL 8
 ###########
 
-formula3 <- priceBE ~ 
+formula8 <- priceBE ~ 
   scale(priceBE_lag1) + scale(priceBE_lag2) + scale(priceBE_lag3) + scale(priceBE_lag4) + scale(priceBE_lag5) +
   scale(priceNL_lag1) + scale(priceNL_lag2) + scale(priceNL_lag3) + scale(priceNL_lag4) + scale(priceNL_lag5) +
   scale(priceFR_lag1) + scale(priceFR_lag2) + scale(priceFR_lag3) + scale(priceFR_lag4) + scale(priceFR_lag5) +
@@ -177,28 +221,15 @@ formula3 <- priceBE ~
   scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
   scale(loadBE) + scale(loadNL) + scale(loadDE) +
   scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE) +
-  scale(trend) + scale(seasonal)
+  seasonal + trend
 
-model3 <- rq(formula3, 
+model8 <- rq(formula8, 
              data=data_train,
-             tau = 1:99/100)
+             tau = 1:99/100) 
 
-predictions_model3 <- predict(model3, 
+predictions_model8 <- predict(model8, 
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
-write.csv(predictions_model3, "predictions_model3.csv", row.names=FALSE)
 
-### MODEL 4 - SCAD
-##################
-
-model4 <- rq(formula1, 
-             data=data_train,
-             method = "scad",
-             #start = "lasso",
-             tau = 0.01)
-
-predictions_model4 <- predict(model4, 
-                              subset(data_test, select = -c(priceBE)),
-                              tau = 1:99/100)
-write.csv(predictions_model4, "predictions_scad.csv", row.names=FALSE)
+write.csv(predictions_model8, "predictions_model8.csv", row.names=FALSE)
 
