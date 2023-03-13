@@ -1,8 +1,8 @@
 library(ggplot2)
 theme_set(theme_bw())
 
-pinball1 <- read.csv("~/Documents/Github/eem-rkqr/results/pinball1.csv")
-pinball2 <- read.csv("~/Documents/Github/eem-rkqr/results/pinball2.csv")
+pinball1 <- read.csv("~/Documents/Github/eem-rkqr/results/03_pinball1.csv")
+pinball2 <- read.csv("~/Documents/Github/eem-rkqr/results/03_pinball2.csv")
 
 ggplot(pinball1) +
   geom_line(aes(tau, GB1, color="Gradient boosting (order 1)")) +
@@ -36,8 +36,8 @@ ggplot(pinball2) +
   #theme(legend.position = "bottom") +
   #guides(color=guide_legend(nrow=2, byrow=TRUE)) 
 
-ggsave(p_pinball1, width=8, height=5, units="in", filename="p_pinball1.png")
-ggsave(p_pinball2, width=8, height=5, units="in", filename="p_pinball2.png")
+ggsave(p_pinball1, width=8, height=5, units="in", filename="p_pinball1_03.png")
+ggsave(p_pinball2, width=8, height=5, units="in", filename="p_pinball2_03.png")
 
 colMeans(pinball1)
 colMeans(pinball2)
