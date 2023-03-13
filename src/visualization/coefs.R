@@ -1,24 +1,89 @@
-# plots
-lm <- lm(data=mtcars, 
-         formula =  hp ~  disp + mpg + I(mpg^2) + qsec + am)
+library(ggplot2)
+library(forecast)
+library(quantreg)
+library(tidyverse)
+library(dplyr)
+library(lubridate)
+require(rms)
+theme_set(theme_bw())
 
-ols <- as.data.frame(coef(lm))
-ols.ci <- as.data.frame(confint(lm))
-ols2 <- cbind(ols, ols.ci)
-ols2 <- tibble::rownames_to_column(ols2, var="term")
+# import data
+hour = 17
+data <- read.csv(paste0("~/Documents/Github/eem-rkqr/data/final_", hour, ".csv"))
+data$datetime <- as.POSIXct(data$datetime, format = "%Y-%m-%d")
+
+# make lagged variables
+# BE
+data$priceBE_lag1 <- lag(data$priceBE, n=1, default=NA)
+data$priceBE_lag2 <- lag(data$priceBE, n=2, default=NA)
+data$priceBE_lag3 <- lag(data$priceBE, n=3, default=NA)
+data$priceBE_lag4 <- lag(data$priceBE, n=4, default=NA)
+data$priceBE_lag5 <- lag(data$priceBE, n=5, default=NA)
+# NL
+data$priceNL_lag1 <- lag(data$priceNL, n=1, default=NA)
+data$priceNL_lag2 <- lag(data$priceNL, n=2, default=NA)
+data$priceNL_lag3 <- lag(data$priceNL, n=3, default=NA)
+data$priceNL_lag4 <- lag(data$priceNL, n=4, default=NA)
+data$priceNL_lag5 <- lag(data$priceNL, n=5, default=NA)
+data$priceNL <- NULL
+# FR
+data$priceFR_lag1 <- lag(data$priceFR, n=1, default=NA)
+data$priceFR_lag2 <- lag(data$priceFR, n=2, default=NA)
+data$priceFR_lag3 <- lag(data$priceFR, n=3, default=NA)
+data$priceFR_lag4 <- lag(data$priceFR, n=4, default=NA)
+data$priceFR_lag5 <- lag(data$priceFR, n=5, default=NA)
+data$priceFR <- NULL
+# DE
+data$priceDE_lag1 <- lag(data$priceDE, n=1, default=NA)
+data$priceDE_lag2 <- lag(data$priceDE, n=2, default=NA)
+data$priceDE_lag3 <- lag(data$priceDE, n=3, default=NA)
+data$priceDE_lag4 <- lag(data$priceDE, n=4, default=NA)
+data$priceDE_lag5 <- lag(data$priceDE, n=5, default=NA)
+data$priceDE <- NULL
+
+# make month variables
+data[paste0("M", 1:12)] <- as.data.frame(t(sapply(month(data$datetime), tabulate, 12)))
+
+# cleanup
+data <- subset(data, select = -c(`loadFR`))
+data <- na.omit(data)
+data <- data %>%
+  arrange(datetime) %>%
+  filter(duplicated(datetime) == FALSE)
+
+# make trend/seasonal kernel smoothers
+data$trend <- ksmooth(as.Date(data$datetime), data$priceBE, 'normal', bandwidth=365)$y
+data$seasonal <- ksmooth(as.Date(data$datetime), data$priceBE-data$trend, 'normal', bandwidth = 30)$y
+
+# train/test split
+data <- subset(data, format(data$datetime, "%Y") < 2022 )
+data_train <- subset(data, format(data$datetime, "%Y") < 2021 )
+data_test <- subset(data, format(data$datetime, format = "%Y") == 2021)
+
+data_train$datetime <- as.Date(data_train$datetime)
+data_test$datetime <- as.Date(data_test$datetime)
 
 
-model1_viz <- rq(formula1, 
+formula5 <- priceBE ~ 
+  scale(priceBE_lag1) + scale(priceBE_lag2) + scale(priceBE_lag3) + scale(priceBE_lag4) + scale(priceBE_lag5) +
+  scale(priceNL_lag1) + scale(priceNL_lag2) + scale(priceNL_lag3) + scale(priceNL_lag4) + scale(priceNL_lag5) +
+  scale(priceFR_lag1) + scale(priceFR_lag2) + scale(priceFR_lag3) + scale(priceFR_lag4) + scale(priceFR_lag5) +
+  scale(priceDE_lag1) + scale(priceDE_lag2) + scale(priceDE_lag3) + scale(priceDE_lag4) + scale(priceDE_lag5) +
+  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+  scale(loadBE) + scale(loadNL) + scale(loadDE) +
+  scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
+
+model_viz <- rq(formula5, 
                  data=data_train,
                  tau = 1:9/10)
-lm_viz <- lm(formula1,
+lm_viz <- lm(formula5,
              data=data_train)
 ols <- as.data.frame(coef(lm_viz))
 ols.ci <- as.data.frame(confint(lm_viz))
 ols <- cbind(ols, ols.ci)
 ols <- tibble::rownames_to_column(ols, var="term")
 
-data_viz <- model1_viz %>%
+data_viz <- model_viz %>%
   broom::tidy(se.type = "boot", conf.int = TRUE) 
 
 data_viz <- merge(data_viz, ols,
@@ -30,32 +95,53 @@ plot_coef <- function(variable, title) {
     geom_point(aes(x=tau,y=estimate), color="#27408b", size = 3) +
     geom_line(aes(x=tau,y=estimate), color="#27408b", linewidth = 1) +
     geom_ribbon(aes(x=tau, ymin=conf.low,ymax=conf.high),alpha=0.25, fill="#27408b") +
-    geom_hline(aes(yintercept = `coef(lm_viz).x`), lty=1, color="red", linewidth = 1) +
+    geom_hline(aes(yintercept = `coef(lm_viz)`), lty=1, color="red", linewidth = 1) +
     geom_hline(aes(yintercept= `2.5 %`), lty=2, color="red", linewidth=1)+
     geom_hline(aes(yintercept= `97.5 %`), lty=2, color="red", linewidth=1) +
     geom_hline(aes(yintercept= 0), lty=1, color="black", linewidth=1) +
-    labs(x = "Quantile", y = "Estimate", title = title) +
+    labs(x = "Quantile", y = "Estimate")
+    #labs(x = "Quantile", y = "Estimate", title = title) +
     #ylim(-10, 25) +
-    theme(plot.title = element_text(hjust = 0.5))
+    #theme(plot.title = element_text(hjust = 0.5))
   return(p)
 }
 
-plot_coef("scale(loadBE)", "Load Belgium") # 5  21
-plot_coef("scale(loadNL)", "Load Netherlands") # -2  5
-plot_coef("scale(loadDE)", "Load Germany") # -4  6
+p_coef_loadBE <- plot_coef("scale(loadBE)", "Load Belgium") 
+p_coef_loadNL <- plot_coef("scale(loadNL)", "Load Netherlands") # -2  5
+p_coef_loadDE <- plot_coef("scale(loadDE)", "Load Germany") # -4  6
+ggsave(p_coef_loadBE, width=8, height=5, units="in", filename="p_coef_loadBE.png")
+ggsave(p_coef_loadNL, width=8, height=5, units="in", filename="p_coef_loadNL.png")
+ggsave(p_coef_loadDE, width=8, height=5, units="in", filename="p_coef_loadDE.png")
 
-plot_coef("scale(generationBE)", "Generation Belgium") # -4 2
-plot_coef("scale(generationNL)", "Generation Netherlands") # -5 1
-plot_coef("scale(generationFR)", "Generation France") # -10 0
-plot_coef("scale(generationDE)", "Generation Germany") # -5 3
+p_coef_generationBE <- plot_coef("scale(generationBE)", "Generation Belgium") # -4 2
+p_coef_generationNL <- plot_coef("scale(generationNL)", "Generation Netherlands") # -5 1
+p_coef_generationFR <- plot_coef("scale(generationFR)", "Generation France") # -10 0
+p_coef_generationDE <- plot_coef("scale(generationDE)", "Generation Germany") # -5 3
+ggsave(p_coef_generationBE, width=8, height=5, units="in", filename="p_coef_generationBE.png")
+ggsave(p_coef_generationNL, width=8, height=5, units="in", filename="p_coef_generationNL.png")
+ggsave(p_coef_generationDE, width=8, height=5, units="in", filename="p_coef_generationDE.png")
+ggsave(p_coef_generationFR, width=8, height=5, units="in", filename="p_coef_generationFR.png")
 
-plot_coef("scale(solarBE)", "Solar generation Belgium") # -4 2
-plot_coef("scale(wind_onshoreBE)", "Wind onshore generation Belgium") # -5 1
-plot_coef("scale(wind_offshoreBE)", "Wind offshore generation Belgium") # -5 1
 
-plot_coef("scale(priceBE_lag1)", "Price Belgium (lag 1)") #
-plot_coef("scale(priceBE_lag2)", "Price Belgium (lag 2)") #
+p_coef_solarBE <- plot_coef("scale(solarBE)", "Solar generation Belgium") # -4 2
+p_coef_onshoreBE <- plot_coef("scale(wind_onshoreBE)", "Wind onshore generation Belgium") # -5 1
+p_coef_offshoreBE <- plot_coef("scale(wind_offshoreBE)", "Wind offshore generation Belgium") # -5 1
+ggsave(p_coef_solarBE, width=8, height=5, units="in", filename="p_coef_solarBE.png")
+ggsave(p_coef_onshoreBE, width=8, height=5, units="in", filename="p_coef_onshoreBE.png")
+ggsave(p_coef_offshoreBE, width=8, height=5, units="in", filename="p_coef_offshoreBE.png")
 
-plot_coef("scale(priceFR_lag1)", "Price France (lag 1)") #
-plot_coef("scale(priceNL_lag1)", "Price Netherlands (lag 1)") #
-plot_coef("scale(priceDE_lag1)", "Price Germany (lag 1)") #
+p_coef_priceBElag1 <- plot_coef("scale(priceBE_lag1)", "Price Belgium (lag 1)") #
+p_coef_priceBElag2 <- plot_coef("scale(priceBE_lag2)", "Price Belgium (lag 2)") #
+p_coef_priceBElag3 <- plot_coef("scale(priceBE_lag3)", "Price Belgium (lag 2)") #
+ggsave(p_coef_priceBElag1, width=8, height=5, units="in", filename="p_coef_priceBElag1.png")
+ggsave(p_coef_priceBElag2, width=8, height=5, units="in", filename="p_coef_priceBElag2.png")
+ggsave(p_coef_priceBElag3, width=8, height=5, units="in", filename="p_coef_priceBElag3.png")
+
+
+p_coef_priceFRlag1 <- plot_coef("scale(priceFR_lag1)", "Price France (lag 1)") #
+p_coef_priceNLlag1 <- plot_coef("scale(priceNL_lag1)", "Price Netherlands (lag 1)") #
+p_coef_priceDElag1 <- plot_coef("scale(priceDE_lag1)", "Price Germany (lag 1)") #
+ggsave(p_coef_priceFRlag1, width=8, height=5, units="in", filename="p_coef_priceFRlag1.png")
+ggsave(p_coef_priceNLlag1, width=8, height=5, units="in", filename="p_coef_priceNLlag1.png")
+ggsave(p_coef_priceDElag1, width=8, height=5, units="in", filename="p_coef_priceDElag1.png")
+
