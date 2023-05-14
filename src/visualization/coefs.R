@@ -5,10 +5,11 @@ library(tidyverse)
 library(dplyr)
 library(lubridate)
 require(rms)
+library(broom)
 theme_set(theme_bw())
 
 # import data
-hour = "17"
+hour = "03"
 data <- read.csv(paste0("~/Documents/Github/eem-rkqr/data/final_", hour, ".csv"))
 data$datetime <- as.POSIXct(data$datetime, format = "%Y-%m-%d")
 
@@ -68,9 +69,9 @@ formula5 <- priceBE ~
 
 model_viz <- rq(formula5, 
                  data=data_train,
-                 tau = 1:9/10)
-lm_viz <- lm(formula5,
-             data=data_train)
+                 tau = 1:99/100)
+#lm_viz <- lm(formula5,
+#             data=data_train)
 #ols <- as.data.frame(coef(lm_viz))
 #ols.ci <- as.data.frame(confint(lm_viz))
 #ols <- cbind(ols, ols.ci)
@@ -109,9 +110,11 @@ ggsave(p_coef_loadDE, width=8, height=5, units="in", filename=paste0("p_coef_loa
 p_coef_generationBE <- plot_coef("scale(generationBE)", "Generation Belgium") # -4 2
 p_coef_generationNL <- plot_coef("scale(generationNL)", "Generation Netherlands") # -5 1
 p_coef_generationDE <- plot_coef("scale(generationDE)", "Generation Germany") # -5 3
+p_coef_generationFR <- plot_coef("scale(generationFR)", "Generation France") # -5 3
 ggsave(p_coef_generationBE, width=8, height=5, units="in", filename=paste0("p_coef_generationBE_", hour, ".png"))
 ggsave(p_coef_generationNL, width=8, height=5, units="in", filename=paste0("p_coef_generationNL_", hour, ".png"))
 ggsave(p_coef_generationDE, width=8, height=5, units="in", filename=paste0("p_coef_generationDE_", hour, ".png"))
+ggsave(p_coef_generationFR, width=8, height=5, units="in", filename=paste0("p_coef_generationFR_", hour, ".png"))
 
 
 p_coef_solarBE <- plot_coef("scale(solarBE)", "Solar generation Belgium") # -4 2
@@ -124,10 +127,14 @@ ggsave(p_coef_offshoreBE, width=8, height=5, units="in", filename=paste0("p_coef
 
 p_coef_priceBElag1 <- plot_coef("scale(priceBE_lag1)", "Price Belgium (lag 1)") #
 p_coef_priceBElag2 <- plot_coef("scale(priceBE_lag2)", "Price Belgium (lag 2)") #
-p_coef_priceBElag3 <- plot_coef("scale(priceBE_lag3)", "Price Belgium (lag 2)") #
+p_coef_priceBElag3 <- plot_coef("scale(priceBE_lag3)", "Price Belgium (lag 3)") #
+p_coef_priceBElag4 <- plot_coef("scale(priceBE_lag4)", "Price Belgium (lag 4)") #
+p_coef_priceBElag5 <- plot_coef("scale(priceBE_lag5)", "Price Belgium (lag 5)") #
 ggsave(p_coef_priceBElag1, width=8, height=5, units="in", filename=paste0("p_coef_priceBElag1_", hour, ".png"))
 ggsave(p_coef_priceBElag2, width=8, height=5, units="in", filename=paste0("p_coef_priceBElag2_", hour, ".png"))
 ggsave(p_coef_priceBElag3, width=8, height=5, units="in", filename=paste0("p_coef_priceBElag3_", hour, ".png"))
+ggsave(p_coef_priceBElag4, width=8, height=5, units="in", filename=paste0("p_coef_priceBElag4_", hour, ".png"))
+ggsave(p_coef_priceBElag5, width=8, height=5, units="in", filename=paste0("p_coef_priceBElag5_", hour, ".png"))
 
 
 
@@ -137,5 +144,36 @@ p_coef_priceDElag1 <- plot_coef("scale(priceDE_lag1)", "Price Germany (lag 1)") 
 ggsave(p_coef_priceFRlag1, width=8, height=5, units="in", filename=paste0("p_coef_priceFRlag1_", hour, ".png"))
 ggsave(p_coef_priceNLlag1, width=8, height=5, units="in", filename=paste0("p_coef_priceNLlag1_", hour, ".png"))
 ggsave(p_coef_priceDElag1, width=8, height=5, units="in", filename=paste0("p_coef_priceDElag1_", hour, ".png"))
+
+p_coef_priceFRlag2 <- plot_coef("scale(priceFR_lag2)", "Price France (lag 2)") #
+p_coef_priceNLlag2 <- plot_coef("scale(priceNL_lag2)", "Price Netherlands (lag 2)") #
+p_coef_priceDElag2 <- plot_coef("scale(priceDE_lag2)", "Price Germany (lag 2)") #
+ggsave(p_coef_priceFRlag2, width=8, height=5, units="in", filename=paste0("p_coef_priceFRlag2_", hour, ".png"))
+ggsave(p_coef_priceNLlag2, width=8, height=5, units="in", filename=paste0("p_coef_priceNLlag2_", hour, ".png"))
+ggsave(p_coef_priceDElag2, width=8, height=5, units="in", filename=paste0("p_coef_priceDElag2_", hour, ".png"))
+
+p_coef_priceFRlag3 <- plot_coef("scale(priceFR_lag3)", "Price France (lag 3)") #
+p_coef_priceNLlag3 <- plot_coef("scale(priceNL_lag3)", "Price Netherlands (lag 3)") #
+p_coef_priceDElag3 <- plot_coef("scale(priceDE_lag3)", "Price Germany (lag 3)") #
+ggsave(p_coef_priceFRlag3, width=8, height=5, units="in", filename=paste0("p_coef_priceFRlag3_", hour, ".png"))
+ggsave(p_coef_priceNLlag3, width=8, height=5, units="in", filename=paste0("p_coef_priceNLlag3_", hour, ".png"))
+ggsave(p_coef_priceDElag3, width=8, height=5, units="in", filename=paste0("p_coef_priceDElag3_", hour, ".png"))
+
+p_coef_priceFRlag4 <- plot_coef("scale(priceFR_lag4)", "Price France (lag 4)") #
+p_coef_priceNLlag4 <- plot_coef("scale(priceNL_lag4)", "Price Netherlands (lag 4)") #
+p_coef_priceDElag4 <- plot_coef("scale(priceDE_lag4)", "Price Germany (lag 4)") #
+ggsave(p_coef_priceFRlag4, width=8, height=5, units="in", filename=paste0("p_coef_priceFRlag4_", hour, ".png"))
+ggsave(p_coef_priceNLlag4, width=8, height=5, units="in", filename=paste0("p_coef_priceNLlag4_", hour, ".png"))
+ggsave(p_coef_priceDElag4, width=8, height=5, units="in", filename=paste0("p_coef_priceDElag4_", hour, ".png"))
+
+p_coef_priceFRlag5 <- plot_coef("scale(priceFR_lag5)", "Price France (lag 5)") #
+p_coef_priceNLlag5 <- plot_coef("scale(priceNL_lag5)", "Price Netherlands (lag 5)") #
+p_coef_priceDElag5 <- plot_coef("scale(priceDE_lag5)", "Price Germany (lag 5)") #
+ggsave(p_coef_priceFRlag5, width=8, height=5, units="in", filename=paste0("p_coef_priceFRlag5_", hour, ".png"))
+ggsave(p_coef_priceNLlag5, width=8, height=5, units="in", filename=paste0("p_coef_priceNLlag5_", hour, ".png"))
+ggsave(p_coef_priceDElag5, width=8, height=5, units="in", filename=paste0("p_coef_priceDElag5_", hour, ".png"))
+
+
+
 
 

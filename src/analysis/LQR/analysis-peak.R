@@ -63,13 +63,11 @@ data_test <- subset(data, format(data$datetime, format = "%Y") == 2021)
 data_train$datetime <- as.Date(data_train$datetime)
 data_test$datetime <- as.Date(data_test$datetime)
 
-
-
 ### MODEL 1
 ###########
 
 formula1 <- priceBE ~ 
-  scale(priceBE_lag1) + scale(priceBE_lag2) 
+  scale(priceBE_lag1)
 
 model1 <- rq(formula1, 
              data=data_train,
@@ -79,16 +77,32 @@ predictions_model1 <- predict(model1,
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
 
-write.csv(predictions_model1, "predictions_model1.csv", row.names=FALSE)
+write.csv(predictions_model1, "predictions_17_model1.csv", row.names=FALSE)
+
+### MODEL 1
+###########
+
+#formula1 <- priceBE ~ 
+#  scale(priceBE_lag1) + scale(priceBE_lag2) 
+
+#model1 <- rq(formula1, 
+#             data=data_train,
+#             tau = 1:99/100) 
+
+#predictions_model1 <- predict(model1, 
+#                              subset(data_test, select = -c(priceBE)),
+#                              tau = 1:99/100)
+
+#write.csv(predictions_model1, "predictions_model1.csv", row.names=FALSE)
 
 ### MODEL 2
 ###########
 
 formula2 <- priceBE ~ 
-  scale(priceBE_lag1) + scale(priceBE_lag2) +
+  scale(priceBE_lag1) +
   scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
   scale(loadBE) + scale(loadNL) + scale(loadDE)
-  
+
 model2 <- rq(formula2, 
              data=data_train,
              tau = 1:99/100) 
@@ -97,17 +111,35 @@ predictions_model2 <- predict(model2,
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
 
-write.csv(predictions_model2, "predictions_model2.csv", row.names=FALSE)
+write.csv(predictions_model2, "predictions_17_model2.csv", row.names=FALSE)
+
+### MODEL 2
+###########
+
+#formula2 <- priceBE ~ 
+#  scale(priceBE_lag1) + scale(priceBE_lag2) +
+#  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+#  scale(loadBE) + scale(loadNL) + scale(loadDE)
+  
+#model2 <- rq(formula2, 
+#             data=data_train,
+#             tau = 1:99/100) 
+
+#predictions_model2 <- predict(model2, 
+#                              subset(data_test, select = -c(priceBE)),
+#                              tau = 1:99/100)
+
+#write.csv(predictions_model2, "predictions_model2.csv", row.names=FALSE)
 
 ### MODEL 3
 ###########
-  
+
 formula3 <- priceBE ~ 
-  scale(priceBE_lag1) + scale(priceBE_lag2) +
+  scale(priceBE_lag1) +
   scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
   scale(loadBE) + scale(loadNL) + scale(loadDE) +
   scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
-  
+
 model3 <- rq(formula3, 
              data=data_train,
              tau = 1:99/100) 
@@ -116,20 +148,40 @@ predictions_model3 <- predict(model3,
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
 
-write.csv(predictions_model3, "predictions_model3.csv", row.names=FALSE)
+write.csv(predictions_model3, "predictions_17_model3.csv", row.names=FALSE)
+
+
+### MODEL 3
+###########
+  
+#formula3 <- priceBE ~ 
+#  scale(priceBE_lag1) + scale(priceBE_lag2) +
+#  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+#  scale(loadBE) + scale(loadNL) + scale(loadDE) +
+#  scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
+  
+#model3 <- rq(formula3, 
+#             data=data_train,
+#             tau = 1:99/100) 
+
+#predictions_model3 <- predict(model3, 
+#                              subset(data_test, select = -c(priceBE)),
+#                              tau = 1:99/100)
+
+#write.csv(predictions_model3, "predictions_model3.csv", row.names=FALSE)
 
 ### MODEL 4
 ###########  
 
 formula4 <- priceBE ~ 
-  scale(priceBE_lag1) + scale(priceBE_lag2) +
+  scale(priceBE_lag1) +
   scale(priceNL_lag1) +
   scale(priceFR_lag1) +
   scale(priceDE_lag1) +
   scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
   scale(loadBE) + scale(loadNL) + scale(loadDE) +
   scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
-  
+
 model4 <- rq(formula4, 
              data=data_train,
              tau = 1:99/100)   
@@ -138,7 +190,29 @@ predictions_model4 <- predict(model4,
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
 
-write.csv(predictions_model4, "predictions_model4.csv", row.names=FALSE)
+write.csv(predictions_model4, "predictions_17_model4.csv", row.names=FALSE)
+
+### MODEL 4
+###########  
+
+#formula4 <- priceBE ~ 
+#  scale(priceBE_lag1) + scale(priceBE_lag2) +
+#  scale(priceNL_lag1) +
+#  scale(priceFR_lag1) +
+#  scale(priceDE_lag1) +
+#  scale(generationBE) + scale(generationNL) + scale(generationFR) + scale(generationDE) +
+#  scale(loadBE) + scale(loadNL) + scale(loadDE) +
+#  scale(solarBE) + scale(wind_onshoreBE) + scale(wind_offshoreBE)
+  
+#model4 <- rq(formula4, 
+#             data=data_train,
+#             tau = 1:99/100)   
+
+#predictions_model4 <- predict(model4, 
+#                              subset(data_test, select = -c(priceBE)),
+#                              tau = 1:99/100)
+
+#write.csv(predictions_model4, "predictions_model4.csv", row.names=FALSE)
 
 ### MODEL 5
 ###########
@@ -160,7 +234,7 @@ predictions_model5 <- predict(model5,
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
 
-write.csv(predictions_model5, "predictions_model5.csv", row.names=FALSE)
+write.csv(predictions_model5, "predictions_17_model5.csv", row.names=FALSE)
 
 ### MODEL 6
 ###########
@@ -184,7 +258,7 @@ predictions_model6 <- predict(model6,
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
 
-write.csv(predictions_model6, "predictions_model6.csv", row.names=FALSE)
+write.csv(predictions_model6, "predictions_17_model6.csv", row.names=FALSE)
 
 ### MODEL 7
 ###########
@@ -207,7 +281,7 @@ predictions_model7 <- predict(model7,
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
 
-write.csv(predictions_model7, "predictions_model7.csv", row.names=FALSE)
+write.csv(predictions_model7, "predictions_17_model7.csv", row.names=FALSE)
 
 
 ### MODEL 8
@@ -231,5 +305,5 @@ predictions_model8 <- predict(model8,
                               subset(data_test, select = -c(priceBE)),
                               tau = 1:99/100)
 
-write.csv(predictions_model8, "predictions_model8.csv", row.names=FALSE)
+write.csv(predictions_model8, "predictions_17_model8.csv", row.names=FALSE)
 
